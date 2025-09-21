@@ -1,0 +1,116 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'gcp'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+bootJar {
+    enabled = true
+    archiveFileName = 'cloudblog_mailing.jar'
+}
+
+dependencies {
+    // lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    annotationProcessor 'org.projectlombok:lombok'
+    // spring boot
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.5.0'
+//    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    // java mail
+    implementation 'javax.mail:mail:1.4.7'
+    implementation 'javax.activation:activation:1.1.1'
+    // markdown to html
+    implementation 'org.commonmark:commonmark:0.21.0'
+    // logging
+    implementation 'org.slf4j:slf4j-api'
+    implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
+    implementation 'org.apache.logging.log4j:log4j-api'
+    implementation 'org.apache.logging.log4j:log4j-core'
+    // firestore
+    implementation 'io.grpc:grpc-api:1.71.0'
+    implementation 'io.grpc:grpc-core:1.71.0'
+
+    implementation 'com.google.firebase:firebase-bom:33.16.0'
+    implementation 'com.google.firebase:firebase-admin:9.4.3'
+    // gen ai
+    implementation 'com.google.genai:google-genai:1.8.0'
+    // jsoup
+    implementation 'org.jsoup:jsoup:1.20.1'
+    //text-to-speech
+    implementation 'com.google.cloud:google-cloud-texttospeech:2.68.0'
+    //jdbc
+    implementation 'mysql:mysql-connector-java:8.0.33'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // Jakarta EE
+    implementation 'jakarta.persistence:jakarta.persistence-api'
+    implementation 'jakarta.transaction:jakarta.transaction-api'
+
+    //== 기존(spring boot 2.x) Java EE 기반의 의존성 ==//
+    implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
+    implementation 'com.google.code.gson:gson'
+    implementation 'org.xhtmlrenderer:flying-saucer-core:9.1.22'
+    implementation 'org.xhtmlrenderer:flying-saucer-pdf:9.1.22'
+    implementation 'net.sourceforge.nekohtml:nekohtml:1.9.22'
+
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+def querydslDir = layout.buildDirectory.dir("generated/querydsl").get().asFile
+
+tasks.withType(JavaCompile).configureEach {
+    options.generatedSourceOutputDirectory.set(querydslDir)
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs += [querydslDir]
+        }
+        resources {
+            srcDir 'resources' // 프로젝트 루트의 'resources' 디렉터리를 리소스 폴더로 추가
+        }
+    }
+}
+
+
+//== 두 가지 방식중 택1 ==//
+
+//== gradle clean 작업 수행 시 후속 작업으로 querydslDir 디렉토리의 파일들도 함께 제거 되도록 설정한다 ==//
+clean.doLast {
+    file(querydslDir).deleteDir()
+}
+
+//== gradle clean과 함께 수행되도록 하려면 아래와 같이 설정한다 ==//
+clean {
+    delete file(querydslDir)
+}

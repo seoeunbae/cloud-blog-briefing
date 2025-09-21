@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscribe to 'Google Cloud Briefing for CE'</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .gcp-card {
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            background-color: #ffffff;
+        }
+        .gcp-input {
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            transition: border-color 150ms cubic-bezier(0.4,0,0.2,1);
+        }
+        .gcp-input:focus, .gcp-input:focus-within {
+            border-color: #1a73e8;
+            border-width: 2px;
+            padding: 0.75rem calc(1rem - 1px); /* Adjust padding for border */
+        }
+        .gcp-button {
+            background-color: #1a73e8;
+            color: #ffffff;
+            font-weight: 500;
+            border-radius: 4px;
+            transition: background-color 150ms cubic-bezier(0.4,0,0.2,1);
+        }
+        .gcp-button:hover {
+            background-color: #185abc;
+        }
+        .gcp-button:disabled {
+            background-color: #e0e0e0;
+            cursor: not-allowed;
+        }
+        .loader {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #1a73e8;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+<div class="gcp-card max-w-2xl w-full">
+    <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center">
+            <img src="https://www.gstatic.com/images/branding/product/1x/google_cloud_48dp.png" alt="Google Cloud Logo" class="w-8 h-8 mr-4">
+            <div>
+                <h1 class="text-xl font-medium text-gray-800">Google Cloud Briefing for CE</h1>
+                <p class="text-sm text-gray-600">Get the latest AI and cloud news delivered to your inbox.</p>
+            </div>
+        </div>
+    </div>
+
+    <form th:action="@{/v1/mail/subscribe}" th:object="${subscriber}" method="post" class="p-6 space-y-6">
+        <input type="hidden" id="characterCountHidden" name="characterCount" th:field="*{characterCount}">
+
+        <div th:if="${successMessage}" class="p-4 text-sm text-green-800 bg-green-100 rounded-lg" role="alert">
+            <span class="font-medium">Success!</span> <span th:text="${successMessage}"></span>
+        </div>
+        <div th:if="${errorMessage}" class="p-4 text-sm text-red-800 bg-red-100 rounded-lg" role="alert">
+            <span class="font-medium">Error!</span> <span th:text="${errorMessage}"></span>
+        </div>
+
+        <div class="space-y-2">
+            <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
+            <input type="email" th:field="*{email}" id="email" class="gcp-input w-full px-4 py-3" placeholder="your-email@example.com" required>
+            <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-red-600 text-sm mt-1"></p>
+        </div>
+
+<!--        <div class="space-y-2">-->
+<!--            <label for="role" class="block text-sm font-medium text-gray-700">Area Of Interest / Role</label>-->
+<!--            <select th:field="*{role}" id="role" class="gcp-input w-full px-4 py-3 bg-white" required>-->
+<!--                <option value="Cloud Tech Team">Select your role</option>-->
+<!--                <option value="Customer Engineer Team">Customer Engineer Team</option>-->
+<!--                <option value="Technical Account Team">Technical Account Team</option>-->
+<!--                <option value="Marketing Team">Marketing Team</option>-->
+<!--                <option value="Software Engineer Team">Software Engineer Team</option>-->
+<!--                <option value="Site Reliability Engineer Team">Site Reliability Team</option>-->
+<!--                <option value="Security Engineer Team">Security Engineer Team</option>-->
+<!--                <option value="System Engineer Team">System Engineer Team</option>-->
+<!--            </select>-->
+<!--        </div>-->
+
+        <div class="space-y-2">
+            <fieldset id="category-fieldset" class="border border-gray-300 rounded-md p-4">
+                <legend class="text-sm font-medium text-gray-700 px-2">Categories</legend>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div class="flex items-center" th:each="category : ${T(gcp.cloudblog_mailing.crawling.enums.Category).values()}">
+                        <input type="checkbox"
+                               th:id="category"
+                               name="categories"
+                               th:value="${category.toString().replace('_', '')}"
+                               class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <label th:for="${category}"
+                               th:text="${category.toString().replace('_', '')}"
+                               class="ml-3 block text-sm text-gray-900"></label>
+                    </div>
+                </div>
+            </fieldset>
+            <div id="hashtag-container" class="mt-3 flex flex-wrap gap-2">
+                <!-- Hashtags will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <div class="space-y-3 hidden">
+            <label class="block text-sm font-medium text-gray-700">Summary Length (characters)</label>
+            <div class="flex items-center space-x-4">
+                <input type="range" value="600" id="characterSlider" min="100" max="1000" step="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="updateCharacterCount(this.value)">
+                <input type="number" value="600" id="characterCount" min="100" max="1000" class="gcp-input w-28 px-3 py-2 text-center" oninput="updateSlider(this.value)">
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 pt-4">
+            <button type="submit" class="gcp-button w-full sm:w-1/2 py-3 px-4 flex items-center justify-center">
+                <span>✍️</span><span class="ml-2">뉴스레터 구독하기</span>
+            </button>
+            <button id="direct_newsletterBtn" onclick="requestNewsletter()" type="button" class="gcp-button w-full sm:w-1/2 py-3 px-4 flex items-center justify-center bg-gray-600 hover:bg-gray-700">
+                <span id="button-icon">📨</span><span id="button-text" class="ml-2">바로 뉴스레터 받기</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function updateCharacterCount(value) {
+        document.getElementById('characterCount').value = value;
+        document.getElementById('characterCountHidden').value = value;
+    }
+
+    function updateSlider(value) {
+        document.getElementById('characterSlider').value = value;
+        document.getElementById('characterCountHidden').value = value;
+    }
+
+    function requestNewsletter() {
+        // Get button elements
+        const button = document.getElementById('direct_newsletterBtn');
+        const buttonText = document.getElementById('button-text');
+        const buttonIcon = document.getElementById('button-icon');
+        const emailInput = document.getElementById('email');
+        const characterCountInput = 600;
+        const selectedcategories = document.querySelectorAll('#category-fieldset input[name="categories"]:checked');
+        console.log(selectedcategories)
+        const role = document.getElementById('role');
+
+        // Validate inputs
+        if (!emailInput || !emailInput.value) {
+            alert('Please enter an email address');
+            return;
+        }
+
+        // Disable button and show loading state
+        if (button) button.disabled = true;
+        if (buttonText) buttonText.textContent = 'Calling Gemini... (3m)';
+        if (buttonIcon) buttonIcon.innerHTML = '<div class="loader"></div>';
+
+        // Convert NodeList to array of values
+        const selectedCategories = Array.from(selectedcategories)
+            .map(cb => cb.value)
+            .map(value => value.replaceAll('%2C', ',').trim());
+
+        const stringCategories = selectedCategories.join(',');
+        // Prepare request body
+        const requestBody = {
+            email: emailInput.value,
+            // characterCount: characterCountInput ? (parseInt(characterCountInput.value) || 600) : 600,
+            characterCount: 600,
+            role: 'Customer Engineer Team', // Match the exact string in the select options
+            categories: stringCategories
+        };
+
+        // Construct fetch URL
+        let fetchUrl = `/v1/mail`;
+
+        // Send request
+        fetch(fetchUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(requestBody),
+            timeout: 10 * 60 * 1000
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(result => {
+                alert('샘플 뉴스 레터가 발송되었습니다');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to send: ' + error.message);
+            })
+            .finally(() => {
+                // Reset button state
+                if (button) button.disabled = false;
+                if (buttonText) buttonText.textContent = 'Get a Sample';
+                if (buttonIcon) buttonIcon.innerHTML = '📨';
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const fieldset = document.getElementById('category-fieldset');
+        const hashtagContainer = document.getElementById('hashtag-container');
+
+        const updateHashtags = () => {
+            hashtagContainer.innerHTML = '';
+            const checkedBoxes = fieldset.querySelectorAll('input[type="checkbox"]:checked');
+
+            checkedBoxes.forEach(checkbox => {
+                const label = document.querySelector(`label[for="${checkbox.id}"]`);
+                if (label) {
+                    const tag = document.createElement('span');
+                    tag.className = 'bg-sky-100 text-sky-800 text-xs font-medium px-2.5 py-1 rounded-full';
+                    tag.textContent = `#${label.textContent}`;
+                    hashtagContainer.appendChild(tag);
+                }
+            });
+        };
+
+        fieldset.addEventListener('change', updateHashtags);
+        updateHashtags(); // Initial call
+
+    });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="|Google Cloud Briefing Archive for ${email}|">Article Archive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #f7f8fa; /* A softer background color */
+        }
+        .prose h1, .prose h2, .prose h3 {
+            color: #1e293b;
+        }
+        .prose p, .prose li {
+            color: #475569;
+        }
+        .prose a {
+            color: #4f46e5;
+        }
+        .active-date-btn {
+            background-color: #eef2ff;
+            color: #4338ca;
+            font-weight: 600;
+            border-right: 3px solid #4f46e5;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+<div class="flex h-screen">
+    <!-- Sidebar / Date Selection -->
+    <aside class="w-80 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col">
+        <div class="p-6 border-b border-slate-200">
+            <div class="flex items-center space-x-3">
+                <img src="https://www.gstatic.com/images/branding/product/1x/google_cloud_48dp.png" alt="Google Cloud Logo" class="w-9 h-9">
+                <div>
+                    <h1 class="font-bold text-lg text-slate-900">Briefing Archive</h1>
+                    <p class="text-xs text-slate-500" th:text="${email}">user@example.com</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 overflow-y-auto" id="dateSelectorContainer">
+            <div class="py-4 space-y-1">
+                <div th:if="${articles != null and !articles.empty}">
+                    <th:block th:each="entry : ${articles}">
+                        <button
+                                th:data-date="${entry.key}"
+                                class="date-selector-btn w-full flex items-center px-6 py-3 text-sm font-medium text-slate-600 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-900"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg>
+                            <span th:text="|${entry.key}주의 브리핑|">Date</span>
+                        </button>
+                    </th:block>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-10">
+        <div id="contentDisplayContainer" class="max-w-4xl mx-auto">
+            <div id="contentDisplay" class="transition-opacity duration-500 ease-in-out">
+                <div th:if="${not #maps.isEmpty(articles)}">
+                    <div class="mb-8">
+                        <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 mb-2"
+                            th:utext="${not #maps.isEmpty(articles) ? articles.keySet().iterator().next() + ' 주의 브리핑' : ''}">
+                        </h1>
+                        <p class="text-lg text-slate-500">Curated news and updates from Google Cloud.</p>
+                    </div>
+                    <div class="prose prose-lg max-w-none">
+                        <div class="article-content"
+                             th:utext="${articles.values().iterator().next()}"
+                        >
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script th:inline="javascript">
+    const articlesData = /*[[${articles}]]*/ {};
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateSelectorContainer = document.getElementById('dateSelectorContainer');
+        const contentDisplayContainer = document.getElementById('contentDisplay');
+
+        dateSelectorContainer.addEventListener('click', function(event) {
+            const dateButton = event.target.closest('.date-selector-btn');
+            if (dateButton) {
+                const selectedDate = dateButton.getAttribute('data-date');
+
+                document.querySelectorAll('.date-selector-btn').forEach(btn => {
+                    btn.classList.remove('active-date-btn');
+                });
+
+                dateButton.classList.add('active-date-btn');
+
+                updateContentForDate(selectedDate);
+            }
+        });
+
+        function updateContentForDate(date) {
+            const articleContent = articlesData[date] || 'No content available for this date.';
+
+            contentDisplayContainer.style.opacity = 0;
+
+            setTimeout(() => {
+                contentDisplayContainer.innerHTML = `
+                    <div class="mb-8">
+                        <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 mb-2">${date}주의 브리핑</h1>
+                        <p class="text-lg text-slate-500">Curated news and updates from Google Cloud.</p>
+                    </div>
+                    <div class="prose prose-lg max-w-none">
+                        <div class="article-content">${articleContent}</div>
+                    </div>
+                `;
+                contentDisplayContainer.style.opacity = 1;
+            }, 300); // Matches the fade out duration
+        }
+
+        // Auto-select the first item on load
+        const firstDateButton = document.querySelector('.date-selector-btn');
+        if (firstDateButton) {
+            firstDateButton.click();
+        }
+    });
+</script>
+</body>
+</html>
