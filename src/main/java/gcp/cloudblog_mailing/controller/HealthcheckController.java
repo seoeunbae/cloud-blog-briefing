@@ -1,4 +1,4 @@
-package gcp.cloudblog_mailing.service;
+package gcp.cloudblog_mailing.controller;
 
 import com.google.cloud.firestore.Firestore;
 import lombok.RequiredArgsConstructor;

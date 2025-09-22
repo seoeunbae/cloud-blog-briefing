@@ -1,9 +1,10 @@
-package gcp.cloudblog_mailing.service;
+package gcp.cloudblog_mailing.controller;
 
 import gcp.cloudblog_mailing.crawling.RssFilter;
 import gcp.cloudblog_mailing.crawling.enums.Category;
 import gcp.cloudblog_mailing.model.dto.SubscriberDto;
 import gcp.cloudblog_mailing.model.entity.Article;
+import gcp.cloudblog_mailing.service.MailingService;
 import gcp.cloudblog_mailing.util.EmailEncoder;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
