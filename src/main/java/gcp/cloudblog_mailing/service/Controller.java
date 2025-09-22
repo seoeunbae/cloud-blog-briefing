@@ -1,18 +1,13 @@
-package gcp.cloudblog_mailing;
+package gcp.cloudblog_mailing.service;
 
 import gcp.cloudblog_mailing.crawling.RssFilter;
 import gcp.cloudblog_mailing.crawling.enums.Category;
 import gcp.cloudblog_mailing.model.dto.SubscriberDto;
 import gcp.cloudblog_mailing.model.entity.Article;
-import gcp.cloudblog_mailing.repository.ArticleRepository;
 import gcp.cloudblog_mailing.util.EmailEncoder;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.antlr.v4.runtime.tree.Tree;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.ui.Model;
@@ -20,10 +15,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 @Slf4j
 @org.springframework.stereotype.Controller

@@ -1,9 +1,10 @@
-package gcp.cloudblog_mailing;
+package gcp.cloudblog_mailing.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.springframework.transaction.annotation.Propagation;
+import gcp.cloudblog_mailing.util.Command;
+
 import java.io.IOException;import com.google.api.core.ApiFuture;
 import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.*;
@@ -24,15 +25,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.mapping.AccessOptions;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import javax.sound.sampled.*;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -44,7 +42,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class MailingService extends Command{
+public class MailingService extends Command {
     private final ArticleAndCategoryRepository articleAndCategoryRepository;
 
     @Value("${ai.studio.key}") private String ai_studio_key;
@@ -196,7 +194,6 @@ public class MailingService extends Command{
         }
         List<ArticleDto> articles = articleResponse.getArticles();
         ArticleDto article = articles.get(0);
-        log.info("articles : {}", articles.size());
         log.info("article_id:{}", article.getLink());
         return updateArticle(sourceArticle, article);
     }

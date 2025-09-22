@@ -1,15 +1,9 @@
-package gcp.cloudblog_mailing;
+package gcp.cloudblog_mailing.util;
 
-import gcp.cloudblog_mailing.crawling.CrawlingDto;
 import gcp.cloudblog_mailing.crawling.enums.Category;
 import gcp.cloudblog_mailing.model.entity.Article;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 @Slf4j
 public abstract class Command {
     private String CMD = "페르소나 (Persona) " +
