@@ -3,8 +3,7 @@ package gcp.cloudblog_mailing;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
+import org.springframework.transaction.annotation.Propagation;
 import java.io.IOException;import com.google.api.core.ApiFuture;
 import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.*;
@@ -25,7 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mapping.AccessOptions;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import javax.mail.*;
@@ -197,16 +198,19 @@ public class MailingService extends Command{
         ArticleDto article = articles.get(0);
         log.info("articles : {}", articles.size());
         log.info("article_id:{}", article.getLink());
-        Article articleByTitle = articleRepository.getArticleById(sourceArticle.getId()).orElseThrow();
-        Parser parser = org.commonmark.parser.Parser.builder().build();
-        HtmlRenderer renderer = HtmlRenderer.builder().build();
-        articleByTitle.setTotalContent(renderer.render(parser.parse(article.getTotalContent())));
-        articleByTitle.setSummary(renderer.render(parser.parse(article.getSummary())));
-        articleByTitle.setNormalSummary(renderer.render(parser.parse(article.getNormalSummary())));
-        return articleByTitle;
+        return updateArticle(sourceArticle, article);
     }
 
     @Transactional
+    public Article updateArticle(Article sourceArticle, ArticleDto article){
+        Parser parser = org.commonmark.parser.Parser.builder().build();
+        HtmlRenderer renderer = HtmlRenderer.builder().build();
+        sourceArticle.setTotalContent(renderer.render(parser.parse(article.getTotalContent())));
+        sourceArticle.setSummary(renderer.render(parser.parse(article.getSummary())));
+        sourceArticle.setNormalSummary(renderer.render(parser.parse(article.getNormalSummary())));
+        return sourceArticle;
+    }
+
     public Map<String, List<Article>> getArticle(Integer character_cnt, String role, List<Category> categories) {
         Map<String, List<Article>> map = new HashMap<>();
         for(gcp.cloudblog_mailing.crawling.enums.Category category : categories){
