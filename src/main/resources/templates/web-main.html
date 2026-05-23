@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Translation Service - Google Cloud Style</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .gcp-header {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .gcp-tab.active {
+            border-bottom: 2px solid #1a73e8;
+            color: #1a73e8;
+        }
+        .gcp-tab {
+            color: #5f6368;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="p-8">
+
+<div class="max-w-5xl mx-auto bg-white rounded-lg shadow-md">
+    <!-- Header -->
+    <div class="gcp-header p-4 flex items-center">
+        <span class="inline-block bg-blue-600 text-white text-sm font-bold px-2 py-1 rounded-md mr-3">GCP</span>
+        <h1 class="text-xl font-medium text-gray-800">AI Translation Service</h1>
+    </div>
+
+    <div class="p-6 md:p-8">
+        <!-- Original URL Section -->
+        <div class="mb-8 p-4 border border-gray-200 rounded-lg">
+            <h2 class="text-lg font-semibold text-gray-800 mb-2">Original Content</h2>
+            <div class="flex items-center">
+                <span class="text-sm font-medium text-gray-600 mr-2">Source URL:</span>
+                <a id="original-url" href="https://cloudblog.withgoogle.com/" class="text-blue-600 hover:underline text-sm">
+                    https://cloudblog.withgoogle.com/
+                </a>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div>
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                    <button th:each="date : ${archiveDates}"
+                            th:text="${date}"
+                            th:onclick="|openTab(event, '${date}')|"
+                            class="gcp-tab whitespace-nowrap py-3 px-1 font-medium text-sm">
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="mt-6">
+                <div th:each="date : ${archiveDates}" th:id="${date}" class="tab-content">
+                    <div class="prose max-w-none text-gray-700">
+                        <p>This section will display the newsletter archive for <span th:text="${date}">date</span>. The content can be dynamically populated through an API.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openTab(evt, vendorName) {
+        let i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].classList.remove("active");
+        }
+
+        tablinks = document.getElementsByClassName("gcp-tab");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+
+        document.getElementById(vendorName).classList.add("active");
+        evt.currentTarget.classList.add("active");
+    }
+
+    // Activate the first tab by default on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstTab = document.querySelector(".gcp-tab");
+        if(firstTab) {
+            firstTab.click();
+        }
+    });
+</script>
+
+</body>
+</html>

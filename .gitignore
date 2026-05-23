@@ -38,3 +38,5 @@ out/
 logs
 src/main/resources/application.properties
 src/main/resources/key
+cloudblog_mailing.jar
+.antigravitycli

@@ -1,0 +1,27 @@
+spring.application.name=cloudblog-mailing
+
+# Spring Boot Web and Thymeleaf Configuration
+spring.thymeleaf.cache=false
+
+# PostgreSQL / AlloyDB Database Settings
+spring.datasource.url=jdbc:postgresql://YOUR_ALLOYDB_IP:5432/YOUR_DB_NAME
+spring.datasource.username=postgres
+spring.datasource.password=YOUR_PASSWORD
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA & Hibernate Settings
+spring.jpa.hibernate.ddl-auto=update
+spring.sql.init.mode=always
+
+# GCP Project & Service Account Key Settings
+spring.cloud.gcp.project-id=YOUR_GCP_PROJECT_ID
+spring.cloud.gcp.credentials.location=file:/absolute/path/to/your/service-account-key.json
+
+# Spring AI Vertex AI Gemini Configuration
+spring.ai.vertex.ai.gemini.project-id=${spring.cloud.gcp.project-id}
+spring.ai.vertex.ai.gemini.location=us-central1
+spring.ai.vertex.ai.gemini.chat.options.model=gemini-3.5-flash
+spring.ai.vertex.ai.gemini.credentials.file-path=${spring.cloud.gcp.credentials.location}
+
+# Spring AI Vector Store (AlloyDB pgvector)
+spring.ai.vectorstore.pgvector.initialize-schema=true

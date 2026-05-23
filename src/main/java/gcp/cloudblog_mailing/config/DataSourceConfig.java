@@ -6,12 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.PropertySource;
-
 import javax.sql.DataSource;
 
 @Configuration
-@PropertySource("classpath:application.properties")
 public class DataSourceConfig {
     @Value("${spring.datasource.url}") private String jdbcUrl;
 
@@ -26,7 +23,12 @@ public class DataSourceConfig {
         config.setJdbcUrl(jdbcUrl);
         config.setUsername(username);
         config.setPassword(password);
-        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        // Dynamically select driver based on JDBC URL scheme
+        if (jdbcUrl != null && jdbcUrl.startsWith("jdbc:postgresql:")) {
+            config.setDriverClassName("org.postgresql.Driver");
+        } else {
+            config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        }
 
         // Pool Configuration
         config.setMaximumPoolSize(10);

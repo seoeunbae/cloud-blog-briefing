@@ -30,29 +30,6 @@ public class Controller {
     private static final Integer DEFAULT_CHARACTER_CNT = 400;
     private final MailingService mailingService;
 
-//    @GetMapping("/{email}/audio")
-//    public ResponseEntity<byte[]> getAudio(@PathVariable String email) throws IOException, InterruptedException, ExecutionException {
-//        String emailContent = service.getEmailContent(email);
-////        byte[] bytes = service.makeAudio(emailContent);
-//
-//        HttpHeaders headers = new HttpHeaders();
-//
-//        // 3. Set the Content-Type header to "audio/mpeg" for MP3 files
-//        headers.setContentType(MediaType.parseMediaType("audio/mpeg"));
-//
-//        // 4. Set the Content-Disposition header to trigger a download
-//        //    This also suggests a filename to the browser.
-//        String filename = "audio_for_" + email.replaceAll("[^a-zA-Z0-9.-]", "_") + ".mp3";
-//        headers.setContentDispositionFormData("attachment", filename);
-//
-//        // 5. Set the Content-Length header (good practice for file downloads)
-//        headers.setContentLength(bytes.length);
-//
-//        // 6. Build and return the ResponseEntity
-//        //    This combines the audio data, headers, and an "OK" (200) status
-//        return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
-//    }
-
     @Scheduled(cron = "0 0 18 * * WED,SUN", zone = "Asia/Seoul")
     @PostMapping("/ai/weekly")
     @ResponseBody

@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCP Documentation RAG Chatbot (V2)</title>
+    <!-- Modern Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- vis-network library for gorgeous graph visualizations -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <!-- marked.js for rich markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: rgba(17, 24, 39, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary-g1: #3b82f6;
+            --primary-g2: #8b5cf6;
+            --accent-emerald: #10b981;
+            --accent-gold: #fbbf24;
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+        }
+
+        /* Top Header Navigation */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo i {
+            -webkit-text-fill-color: initial;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            padding: 0.5rem;
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            outline: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-g1), var(--primary-g2));
+            color: white;
+            box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+            transform: translateY(-1px);
+        }
+
+        /* Dashboard Split Layout */
+        .dashboard-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 73px);
+            position: relative;
+        }
+
+        /* Left Side: Chat Workspace */
+        .chat-panel {
+            width: 45%;
+            height: 100%;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+        }
+
+        .chat-header {
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .status-badge .dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--accent-emerald);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Message Bubbles styling */
+        .message-wrapper {
+            display: flex;
+            width: 100%;
+            gap: 1rem;
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .message-wrapper.user {
+            justify-content: flex-end;
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .avatar i {
+            font-size: 0.95rem;
+        }
+
+        .message-wrapper.ai .avatar {
+            background: linear-gradient(135deg, var(--primary-g1), var(--primary-g2));
+            color: white;
+            box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            padding: 1.1rem 1.4rem;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #e5e7eb;
+            position: relative;
+        }
+
+        .message-wrapper.user .message-bubble {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-top-right-radius: 4px;
+        }
+
+        .message-wrapper.ai .message-bubble {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid var(--border-color);
+            border-top-left-radius: 4px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Markdown elements custom styling */
+        .message-bubble h3 {
+            margin: 1rem 0 0.5rem 0;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+        }
+        .message-bubble h4 {
+            margin: 0.8rem 0 0.4rem 0;
+            font-size: 1rem;
+        }
+        .message-bubble ul, .message-bubble ol {
+            margin-left: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+        .message-bubble table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+            border: 1px solid var(--border-color);
+        }
+        .message-bubble th, .message-bubble td {
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+        .message-bubble th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+        }
+
+        /* Metadata & citations style */
+        .meta-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .badge-citation {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .badge-citation.blog-post {
+            background: rgba(59, 130, 246, 0.12);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+
+        .badge-citation.blog-post:hover {
+            background: rgba(59, 130, 246, 0.25);
+            border-color: #60a5fa;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .badge-citation.release-note {
+            background: rgba(16, 185, 129, 0.12);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .badge-citation.release-note:hover {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: #34d399;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 0.35rem;
+            padding: 0.5rem 0;
+            align-items: center;
+        }
+
+        .typing-indicator span {
+            width: 7px;
+            height: 7px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: bounce 1.3s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+
+        /* Quick Questions grid suggestions */
+        .suggestions-container {
+            padding: 1.25rem 2rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background: rgba(15, 23, 42, 0.2);
+        }
+
+        .suggestions-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+
+        .suggestion-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            padding: 0.65rem 1rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-align: left;
+            color: var(--text-primary);
+            transition: all 0.25s;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .suggestion-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(139, 92, 246, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* Message Input area */
+        .input-panel {
+            padding: 1.25rem 2rem;
+            border-top: 1px solid var(--border-color);
+            background: rgba(15, 23, 42, 0.4);
+        }
+
+        .input-container {
+            display: flex;
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 0.4rem;
+            gap: 0.5rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .input-container:focus-within {
+            border-color: rgba(139, 92, 246, 0.6);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.15);
+        }
+
+        .input-container textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            padding: 0.75rem;
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: none;
+            height: 44px;
+            line-height: 1.4;
+        }
+
+        .input-container .btn-send {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary-g1), var(--primary-g2));
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .input-container .btn-send:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Right Side: Knowledge Graph Panel */
+        .graph-panel {
+            width: 55%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(10, 15, 26, 0.95);
+            position: relative;
+        }
+
+        .graph-header {
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(15, 23, 42, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .graph-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .graph-legend {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .legend-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .legend-color.service { background-color: #3b82f6; border: 1px solid #60a5fa; }
+        .legend-color.concept { background-color: #8b5cf6; border: 1px solid #c084fc; }
+        .legend-color.feature { background-color: #10b981; border: 1px solid #34d399; }
+
+        /* vis-network rendering canvas */
+        .graph-canvas {
+            flex: 1;
+            height: 100%;
+            position: relative;
+        }
+
+        #mynetwork {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+        }
+
+        .graph-control-hint {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+        }
+
+        /* Ingestion Loading Spinner overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.05);
+            border-top: 4px solid var(--primary-g1);
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+        }
+
+        .loading-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 500;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.6; }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive styling */
+        @media (max-width: 1024px) {
+            .dashboard-container {
+                flex-direction: column-reverse;
+                overflow-y: auto;
+            }
+            .chat-panel, .graph-panel {
+                width: 100%;
+                height: 50vh;
+                border-right: none;
+            }
+            .chat-panel {
+                height: 60vh;
+            }
+            .graph-panel {
+                height: 40vh;
+                border-bottom: 1px solid var(--border-color);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-cloud-bolt"></i>
+            <span>GCP Doc RAG V2</span>
+        </div>
+        <div class="actions">
+            <button class="btn btn-secondary" id="btn-reseed">
+                <i class="fa-solid fa-database"></i> 기본 그래프 로드
+            </button>
+            <button class="btn btn-primary" id="btn-ingest">
+                <i class="fa-solid fa-arrows-rotate"></i> RSS 크롤링 & 적재 (Ingest)
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="dashboard-container">
+        <!-- Ingestion Processing Overlay Spinner -->
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loading-text">Google Cloud Blog RSS 크롤링 및 인덱싱 중...</div>
+        </div>
+
+        <!-- Left Chat Section -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <h2>RAG 대화형 질의</h2>
+                <div class="status-badge">
+                    <span class="dot"></span>
+                    <span>AlloyDB RAG Engine Online</span>
+                </div>
+            </div>
+
+            <!-- Messages Stream Area -->
+            <div class="chat-messages" id="chat-messages">
+                <div class="message-wrapper ai">
+                    <div class="avatar">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="message-bubble">
+                        안녕하세요, Customer Engineer를 위한 RAG 및 지식 그래프 챗봇입니다.
+                        <br><br>
+                        GCP 공식 블로그(https://cloudblog.withgoogle.com/rss/) 글을 기반으로, <strong>"Cloud Run과 Cloud Functions 차이가 뭐야?"</strong> 같은 기술 비교 질문을 자연어로 하시면 정확한 벡터 검색과 관계형 지식 그래프 매핑을 결합해 명확하게 답변 드립니다.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggestions Grid -->
+            <div class="suggestions-container">
+                <div class="suggestions-title">인기 질문 템플릿</div>
+                <div class="suggestions-grid">
+                    <button class="suggestion-card" onclick="setQuickQuestion('Cloud Run과 Cloud Functions 차이가 뭐야?')">
+                        Cloud Run과 Cloud Functions 차이
+                    </button>
+                    <button class="suggestion-card" onclick="setQuickQuestion('AlloyDB의 주요 기능과 Cloud Spanner와의 차이점은?')">
+                        AlloyDB와 Spanner 비교
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Input Area -->
+            <div class="input-panel">
+                <div class="input-container">
+                    <textarea id="chat-input" placeholder="GCP 서비스에 대한 기술적 질문을 입력하세요..."></textarea>
+                    <button class="btn-send" id="btn-send">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Visual Knowledge Graph Section -->
+        <div class="graph-panel">
+            <div class="graph-header">
+                <h2>실시간 지식 그래프 (Knowledge Graph)</h2>
+                <div class="graph-legend">
+                    <div class="legend-item">
+                        <div class="legend-color service"></div>
+                        <span>Service</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color concept"></div>
+                        <span>Concept</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color feature"></div>
+                        <span>Feature</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Canvas Container -->
+            <div class="graph-canvas">
+                <div id="mynetwork"></div>
+                <div class="graph-control-hint">
+                    <i class="fa-solid fa-circle-info"></i> 마우스 스크롤로 확대/축소, 드래그하여 탐색할 수 있습니다.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client-side Logic Script -->
+    <script th:inline="javascript">
+        let network = null;
+        let originalNodes = null;
+        let originalEdges = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Load Full Knowledge Graph initially
+            loadKnowledgeGraph();
+
+            // Setup Event Handlers
+            document.getElementById("btn-send").addEventListener("click", sendMessage);
+            document.getElementById("chat-input").addEventListener("keydown", (e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            document.getElementById("btn-ingest").addEventListener("click", () => triggerIngest("/v2/api/ingest", "Google Cloud Blog RSS 크롤링 및 인덱싱 진행 중..."));
+            document.getElementById("btn-reseed").addEventListener("click", () => triggerIngest("/v2/api/ingest", "기본 GCP 아키텍처 지식 그래프를 구성하는 중..."));
+        });
+
+        function setQuickQuestion(text) {
+            document.getElementById("chat-input").value = text;
+            sendMessage();
+        }
+
+        // Triggers backend RSS Crawl / seed ingestion
+        function triggerIngest(endpoint, text) {
+            const overlay = document.getElementById("loading-overlay");
+            document.getElementById("loading-text").innerText = text;
+            overlay.classList.add("active");
+
+            fetch(endpoint, { method: "POST" })
+                .then(res => {
+                    if (!res.ok) throw new Error("인게스천 처리 오류");
+                    return res.json();
+                })
+                .then(data => {
+                    overlay.classList.remove("active");
+                    alert(data.message || "처리가 성공적으로 완료되었습니다.");
+                    loadKnowledgeGraph(); // Reload updated graph structure
+                })
+                .catch(err => {
+                    overlay.classList.remove("active");
+                    alert("처리 오류: " + err.message);
+                });
+        }
+
+        // Fetch and draw complete Knowledge Graph from DB via vis-network
+        function loadKnowledgeGraph() {
+            fetch("/v2/api/graph")
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById("mynetwork");
+                    
+                    // Style nodes based on Group/Type
+                    const groupStyles = {
+                        "Service": { color: { background: "#1e3a8a", border: "#3b82f6" }, font: { color: "#f3f4f6" } },
+                        "Concept": { color: { background: "#4c1d95", border: "#8b5cf6" }, font: { color: "#f3f4f6" } },
+                        "Feature": { color: { background: "#064e3b", border: "#10b981" }, font: { color: "#f3f4f6" } }
+                    };
+
+                    const styledNodes = data.nodes.map(node => {
+                        const style = groupStyles[node.group] || groupStyles["Service"];
+                        return {
+                            id: node.id,
+                            label: node.label,
+                            title: node.title,
+                            shape: "dot",
+                            size: 25,
+                            borderWidth: 2,
+                            color: style.color,
+                            font: { size: 14, face: "Outfit", color: style.font.color }
+                        };
+                    });
+
+                    const styledEdges = data.edges.map(edge => ({
+                        from: edge.from,
+                        to: edge.to,
+                        label: edge.label,
+                        title: edge.title,
+                        color: { color: "rgba(255,255,255,0.15)", hover: "#8b5cf6", highlight: "#fbbf24" },
+                        font: { size: 10, face: "Inter", color: "#9ca3af", strokeWidth: 0 },
+                        arrows: { to: { enabled: true, scaleFactor: 0.5 } }
+                    }));
+
+                    originalNodes = new vis.DataSet(styledNodes);
+                    originalEdges = new vis.DataSet(styledEdges);
+
+                    const graphData = { nodes: originalNodes, edges: originalEdges };
+                    const options = {
+                        interaction: { hover: true, zoomView: true, dragView: true },
+                        physics: {
+                            solver: "forceAtlas2Based",
+                            forceAtlas2Based: { gravitationalConstant: -50, centralGravity: 0.01, springLength: 100, springConstant: 0.08 }
+                        }
+                    };
+
+                    network = new vis.Network(container, graphData, options);
+                })
+                .catch(err => console.error("지식 그래프 적재 오류:", err));
+        }
+
+        // Submits a message and handles RAG stream responses
+        function sendMessage() {
+            const input = document.getElementById("chat-input");
+            const text = input.value.trim();
+            if (!text) return;
+
+            // Render User Message
+            appendMessage(text, "user");
+            input.value = "";
+
+            // Render glowing AI loading placeholder
+            const typingWrapper = appendLoadingIndicator();
+
+            fetch("/v2/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: text })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("서버 에러가 발생했습니다.");
+                return res.json();
+            })
+            .then(data => {
+                // Remove loading placeholder
+                typingWrapper.remove();
+
+                // Format citation links with source classification for cross-checking
+                let citationsHtml = "";
+                if (data.citations && data.citations.length > 0) {
+                    citationsHtml = "<div class='meta-container'>";
+                    data.citations.forEach(cit => {
+                        let badgeClass = "badge-citation";
+                        let iconClass = "fa-solid fa-bookmark";
+                        let sourcePrefix = "GCP Doc";
+
+                        if (cit.sourceType === "Blog Post") {
+                            badgeClass += " blog-post";
+                            iconClass = "fa-solid fa-blog";
+                            sourcePrefix = "공식블로그";
+                        } else if (cit.sourceType === "Release Note") {
+                            badgeClass += " release-note";
+                            iconClass = "fa-solid fa-tag";
+                            sourcePrefix = "릴리즈노트";
+                        }
+
+                        citationsHtml += `<span class='${badgeClass}' onclick="window.open('${cit.link}', '_blank')" title="클릭하여 원문 보기">
+                            <i class='${iconClass}'></i> <strong>[${sourcePrefix}]</strong> ${cit.title}
+                        </span>`;
+                    });
+                    citationsHtml += "</div>";
+                }
+
+                // Render AI Response Bubble (using marked.js to compile markdown)
+                const markdownAnswer = marked.parse(data.answer);
+                appendMessage(markdownAnswer + citationsHtml, "ai", true);
+
+                // Highlight nodes/edges that the RAG model retrieved
+                highlightQueryResults(data.matchedEntities, data.matchedRelationships);
+            })
+            .catch(err => {
+                typingWrapper.remove();
+                appendMessage("오류가 발생했습니다: " + err.message, "ai");
+            });
+        }
+
+        function appendMessage(content, sender, isHtml = false) {
+            const container = document.getElementById("chat-messages");
+            const wrapper = document.createElement("div");
+            wrapper.className = `message-wrapper ${sender}`;
+
+            const avatar = document.createElement("div");
+            avatar.className = "avatar";
+            avatar.innerHTML = sender === "user" ? "<i class='fa-solid fa-user'></i>" : "<i class='fa-solid fa-robot'></i>";
+
+            const bubble = document.createElement("div");
+            bubble.className = "message-bubble";
+            
+            if (isHtml) {
+                bubble.innerHTML = content;
+            } else {
+                bubble.innerText = content;
+            }
+
+            if (sender === "user") {
+                wrapper.appendChild(bubble);
+                wrapper.appendChild(avatar);
+            } else {
+                wrapper.appendChild(avatar);
+                wrapper.appendChild(bubble);
+            }
+
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+            return wrapper;
+        }
+
+        function appendLoadingIndicator() {
+            const container = document.getElementById("chat-messages");
+            const wrapper = document.createElement("div");
+            wrapper.className = "message-wrapper ai";
+
+            const avatar = document.createElement("div");
+            avatar.className = "avatar";
+            avatar.innerHTML = "<i class='fa-solid fa-robot'></i>";
+
+            const bubble = document.createElement("div");
+            bubble.className = "message-bubble";
+            bubble.innerHTML = `
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+
+            wrapper.appendChild(avatar);
+            wrapper.appendChild(bubble);
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+            return wrapper;
+        }
+
+        // Highlight matched nodes & relationships used to compute the RAG response
+        function highlightQueryResults(matchedEntities, matchedRelationships) {
+            if (!network || !originalNodes || !originalEdges) return;
+
+            const matchedNodeIds = matchedEntities.map(e => e.entityId);
+            
+            // Highlight matching nodes in Gold/Emerald, dim others
+            originalNodes.forEach(node => {
+                const isMatched = matchedNodeIds.includes(node.id);
+                originalNodes.update({
+                    id: node.id,
+                    opacity: isMatched ? 1.0 : 0.25,
+                    borderWidth: isMatched ? 4 : 2,
+                    color: isMatched 
+                        ? { background: "#fbbf24", border: "#f59e0b" } // Gold highlight
+                        : undefined // Default styles
+                });
+            });
+
+            // Highlight matching edges in Purple/Gold, dim others
+            originalEdges.forEach(edge => {
+                const isMatched = matchedRelationships.some(mr => 
+                    (mr.source.toLowerCase().replaceAll("[^a-zA-Z0-9]", "_") === edge.from || edge.from === mr.source.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_")) &&
+                    (mr.target.toLowerCase().replaceAll("[^a-zA-Z0-9]", "_") === edge.to || edge.to === mr.target.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_"))
+                );
+                
+                originalEdges.update({
+                    id: edge.id,
+                    opacity: isMatched ? 1.0 : 0.1,
+                    color: isMatched ? { color: "#fbbf24", hover: "#fbbf24", highlight: "#fbbf24" } : { color: "rgba(255,255,255,0.05)" },
+                    font: { color: isMatched ? "#fbbf24" : "rgba(255,255,255,0.15)" }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
